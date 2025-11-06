@@ -1,30 +1,5 @@
 #include "blink.h"
 
-static inline void do_blink(blink_mode mode)
-{
-    switch (mode)
-    {
-    case LED_ON:
-        k_thread_suspend(blinky_thread_id);
-        gpio_pin_set_dt(&led, 1);
-        break;
-    
-    case LED_OFF:
-        k_thread_suspend(blinky_thread_id);
-        gpio_pin_set_dt(&led, 0);
-        break;
-
-    case LED_TOGGLE:
-        k_thread_suspend(blinky_thread_id);
-        gpio_pin_toggle_dt(&led);
-        break;
-
-    case LED_BLINK:
-        k_thread_resume(blinky_thread_id);
-        break;
-    }
-}
-
 /* infinite blinking loop for the blinky_thread */
 void blink_loop(void *interval, void *, void *)
 {
@@ -70,19 +45,28 @@ void blink_thread()
     {
         if (strcmp(buf, "on") == 0)
         {
-            do_blink(LED_ON);
+            /* suspend blinky thread (it may or may not already be suspended)
+            and set led pin high */
+            k_thread_suspend(blinky_thread_id);
+            gpio_pin_set_dt(&led, 1);
         }
         else if (strcmp(buf, "off") == 0)
         {
-            do_blink(LED_OFF);
+            /* suspend blinky thread (it may or may not already be suspended)
+            and set led pin low */
+            k_thread_suspend(blinky_thread_id);
+            gpio_pin_set_dt(&led, 0);
         }
         else if (strcmp(buf, "toggle") == 0)
         {
-            do_blink(LED_TOGGLE);
+            /* suspend blinky thread (it may or may not already be suspended)
+            and toggle led pin */
+            k_thread_suspend(blinky_thread_id);
+            gpio_pin_toggle_dt(&led);
         }
         else if (strcmp(buf, "blink") == 0)
         {
-            /* get next token, which should be blinking interval */
+            /* get next token, which should be blinking interval in ms */
             k_msgq_get(&tokens, &buf, K_NO_WAIT);
             
             /* verify that the ENTIRE token is numeric */
@@ -98,10 +82,12 @@ void blink_thread()
                 }
             }
 
+            /* if entire token was numeric, update the blink interval
+            and then resume the blinking thread (it may or may not already be active) */
             if (isnumeric)
             {
                 blink_interval = atoi(buf);
-                do_blink(LED_BLINK);
+                k_thread_resume(blinky_thread_id);
             }
         }
         else if (strcmp(buf, "help") == 0)

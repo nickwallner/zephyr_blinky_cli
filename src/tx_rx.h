@@ -1,5 +1,5 @@
-#ifndef UART_TX_RX_H_
-#define UART_TX_RX_H_
+#ifndef TX_RX_H_
+#define TX_RX_H_
 
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
@@ -12,7 +12,7 @@ extern struct k_msgq tokens;
 
 #define USR_IN_BUF_SIZE 128
 
-#define STACKSIZE 512
+#define STACKSIZE 512 // stack size for threads
 
 #define TX_THREAD_PRIO 5
 #define RX_THREAD_PRIO 5
@@ -26,7 +26,8 @@ void rx_thread(); // receiving thread entry function
 
 void uart_callback(const struct device *, void *); // callback for uart interrupts
 
+/* statically define and start threads for tx and rx, no delay */
 K_THREAD_DEFINE(tx, STACKSIZE, tx_thread, NULL, NULL, NULL, TX_THREAD_PRIO, 0, 0);
 K_THREAD_DEFINE(rx, STACKSIZE, rx_thread, NULL, NULL, NULL, RX_THREAD_PRIO, 0, 0);
 
-#endif // UART_TX_RX_H_
+#endif // TX_RX_H_
